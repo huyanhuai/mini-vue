@@ -82,3 +82,31 @@ export function effect(fn, options: any = {}) {
 export function stop(runner) {
     runner.effect.stop();
 }
+
+export function trackEffects(dep) {
+    // 用 dep 来存放所有的 effect
+  
+    // TODO
+    // 这里是一个优化点
+    // 先看看这个依赖是不是已经收集了，
+    // 已经收集的话，那么就不需要在收集一次了
+    // 可能会影响 code path change 的情况
+    if (!dep.has(activEffect)) {
+      dep.add(activEffect);
+      (activEffect as any).deps.push(dep);
+    }
+}
+
+export function triggerEffects(dep) {
+    // 执行收集到的所有的 effect 的 run 方法
+    for (const effect of dep) {
+      if (effect.scheduler) {
+        // scheduler 可以让用户自己选择调用的时机
+        // 这样就可以灵活的控制调用了
+        // 在 runtime-core 中，就是使用了 scheduler 实现了在 next ticker 中调用的逻辑
+        effect.scheduler();
+      } else {
+        effect.run();
+      }
+    }
+}
